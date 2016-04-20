@@ -16,9 +16,13 @@ class BlockEncoder {
 		this.right = [];
 
 		this.STEPS = 16;
+	}
+
+	initBlock(block, keys) {
+		this.block = block || this.block;
+		this.keys = keys || this.keys;
 
 		this.runInitialPermutation();
-
 		this.splitBlock();
 	}
 
@@ -31,10 +35,14 @@ class BlockEncoder {
 		this.right = this.block.slice(- this.block.length / 2);
 	}
 
-	encodeBlock() {
+	cryptBlock() {
 		var prevLeft,
 			prevRigth,
 			tempBlock = [];
+
+		permutationFunciton(this.block, initialPermutationArr);
+
+		this.splitBlock();
 
 		for(var i = 0; i < this.STEPS; i++) {
 			prevLeft = this.left;
@@ -46,7 +54,7 @@ class BlockEncoder {
 			this.right = tempBlock.map((bite, index) => bite ^ prevLeft[index]);
 		}
 
-		return permutationFunciton(this.left.concat(this.right), finalPermutationArr);
+		return permutationFunciton(this.right.concat(this.left), finalPermutationArr);
 	}
 }
 

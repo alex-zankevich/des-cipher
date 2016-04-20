@@ -6,26 +6,37 @@ let permutationFunc = require('../utils/array-permutation');
 
 let keyPermutations = require('../config/permutations/key-permutation');
 let finalKeyPermutation = require('../config/permutations/final-key-permutation');
-let keyShifts = require('../config/key-shifts');
+let encodingKeyshifts = require('../config/key-shifts');
 
 class DES {
 	constructor(sourceText, key) {
-		this.sourceText = sourceText;
-		this.key = key;
+		this.sourceText = sourceText || '';
+		this.key = key || '';
 
 		this.blocks = [];
-		this.keys = [];
+		this.encodingKeys = [];
+		this.decodingKeys = [];
 
 		this.initialTextLength = -1;
 
 		this.BLOCK_SIZE = 64;
 		this.STEPS = 16;
+	}
+
+	initData(sourceText, key) {debugger;
+		this.sourceText = sourceText || this.sourceText;
+		this.key = key || this.key;
 
 		this.transformInitialData();
+		this.generateEncodingKeys();
+	}
 
-		this.generateKeys();
-
-		this.encodeData();
+	consoleData() {
+		console.log(this.bitesToText(this.sourceText.join('')));
+		console.log('');
+		console.log(this.bitesToText(this.encodedData));
+		console.log('');
+		console.log(this.bitesToText(this.decodedData));
 	}
 
 	transformInitialData() {
@@ -38,7 +49,7 @@ class DES {
 		this.initialTextLength = this.sourceText.length;
 
 		this.sourceText = this.sourceText
-			.concat((new Array(this.BLOCK_SIZE - this.sourceText.length % this.BLOCK_SIZE)).fill(1));
+			.concat((new Array(this.sourceText.length % this.BLOCK_SIZE ? this.BLOCK_SIZE - this.sourceText.length % this.BLOCK_SIZE : 0)).fill(1));
 
 		this.blocks = this.sourceText
 			.join('')
@@ -53,7 +64,7 @@ class DES {
 			.filter((bit, index) => (index + 1) % 8);
 	}
 
-	generateKeys() {
+	generateEncodingKeys() {
 		var addKeyBits = function() {
 			var tempBiteCount = 0;
 			for(var i = 0; i < this.key.length + 1; i++) {
@@ -72,26 +83,67 @@ class DES {
 
 		addKeyBits();
 
-		var partC = keyPermutations.C;
-		var partD = keyPermutations.D;
+		var initKeys = function(direction) {
+			var keys = [];
 
-		for(var i = 0; i < this.STEPS; i++) {
-			for(var j = 0; j < keyShifts[i]; j++) {
-				partC.push(partC.shift());
-				partD.push(partD.shift());
+			var partC = keyPermutations.C;
+			var partD = keyPermutations.D;
+
+			for(var i = 0; i < this.STEPS; i++) {
+				for(var j = 0; j < encodingKeyshifts[i]; j++) {
+					if(direction) {
+						partC.push(partC.shift());
+						partD.push(partD.shift());
+					} else {
+						partC.unshift(partC.pop());
+						partD.unshift(partD.pop());
+					}
+				}
+
+				keys.push(permutationFunc(permutationFunc(this.key, partC)
+						.concat(permutationFunc(this.key, partD)), finalKeyPermutation));
 			}
 
-			this.keys.push(permutationFunc(permutationFunc(this.key, partC)
-					.concat(permutationFunc(this.key, partD)), finalKeyPermutation));
-		}
+			return keys;
+		}.bind(this);
+
+		this.encodingKeys = initKeys(true);
+
+		this.decodingKeys = (new Array(this.encodingKeys.length))
+				.fill([])
+				.map((key, index, arr) => this.encodingKeys[this.encodingKeys.length - 1 - index]);
 	}
 
 	encodeData() {
-		this.encodedData = this.blocks.map(block => (new BlockEncoder(block, this.keys)).encodeBlock())
+		var blockEncoder = new BlockEncoder();
+
+		this.encodedData = this.blocks.map(block => {
+				blockEncoder.initBlock(block, this.encodingKeys);
+				return blockEncoder.cryptBlock();
+			})
 			.map(block => block.join(''))
 			.join('');
+	}
+
+	decodeData() {
+		var blockEncoder = new BlockEncoder();
 		
-		console.log(this.encodedData);
+		this.decodedData = this.encodedData
+			.match(/.{1,64}/gim)
+			.map(block => block.split('').map(bite => +bite))
+			.map(block => {
+				blockEncoder.initBlock(block, this.decodingKeys);
+				return blockEncoder.cryptBlock();
+			})
+			.map(block => block.join(''))
+			.join('');
+	}
+
+	bitesToText(bites) {
+		return bites
+			.match(/.{1,8}/gim)
+			.map(bite => String.fromCharCode(parseInt(bite, 2)))
+			.join('');
 	}
 }
 

@@ -1,1 +1,1 @@
-But first a bit of history of how DES came about is appropriate, as well as a look toward the future.
+reau of Standards solicits proposed techniques and algorithms for computer data encryption. The Bu

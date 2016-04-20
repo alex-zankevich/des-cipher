@@ -20,5 +20,9 @@ function readInputData(textFileName, keyFileName) {
 
 readInputData('./input/text.txt', './input/key.txt')
 	.then((data) => {
-		var desCipher = new DES(data.openText, data.key);
+		var desCipher = new DES();
+		desCipher.initData(data.openText, data.key);
+		desCipher.encodeData();
+		desCipher.decodeData();
+		desCipher.consoleData();
 	});
