@@ -14,6 +14,7 @@ class DES {
 		this.key = key || '';
 
 		this.blocks = [];
+
 		this.encodingKeys = [];
 		this.decodingKeys = [];
 
@@ -23,20 +24,30 @@ class DES {
 		this.STEPS = 16;
 	}
 
-	initData(sourceText, key) {debugger;
+	initData(sourceText, key) {
 		this.sourceText = sourceText || this.sourceText;
 		this.key = key || this.key;
+
+		this.initialTextLength = this.sourceText.length;
 
 		this.transformInitialData();
 		this.generateEncodingKeys();
 	}
 
+	get openText() {
+		return this.bitesToText(this.sourceText.join('')).substring(0, this.initialTextLength);
+	}
+
+	get encodedText() {
+		return this.bitesToText(this.encodedData).substring(0, this.initialTextLength);
+	}
+
+	get decodedText() {
+		return this.bitesToText(this.decodedData).substring(0, this.initialTextLength);
+	}
+
 	consoleData() {
-		console.log(this.bitesToText(this.sourceText.join('')));
-		console.log('');
-		console.log(this.bitesToText(this.encodedData));
-		console.log('');
-		console.log(this.bitesToText(this.decodedData));
+		[this.openText, this.encodedText, this.decodedText].forEach((text) => console.log(text, '\n'));
 	}
 
 	transformInitialData() {
@@ -44,9 +55,7 @@ class DES {
 			.map(octet => ('00000000' + octet.toString(2)).slice(-8))
 			.join('')
 			.split('')
-			.map(bit => +bit);
-
-		this.initialTextLength = this.sourceText.length;
+			.map(Number);
 
 		this.sourceText = this.sourceText
 			.concat((new Array(this.sourceText.length % this.BLOCK_SIZE ? this.BLOCK_SIZE - this.sourceText.length % this.BLOCK_SIZE : 0)).fill(1));
@@ -54,13 +63,13 @@ class DES {
 		this.blocks = this.sourceText
 			.join('')
 			.match(new RegExp(`.{1,${this.BLOCK_SIZE}}`, 'gim'))
-			.map(block => block.split('').map(bit => +bit));
+			.map(block => block.split('').map(Number));
 
 		this.key = [].slice.call(new Buffer(this.key))
 			.map(octet => ('00000000' + octet.toString(2)).slice(-8))
 			.join('')
 			.split('')
-			.map(bit => +bit)
+			.map(Number)
 			.filter((bit, index) => (index + 1) % 8);
 	}
 
@@ -123,6 +132,8 @@ class DES {
 			})
 			.map(block => block.join(''))
 			.join('');
+
+		return this.encodedData;
 	}
 
 	decodeData() {
@@ -137,6 +148,8 @@ class DES {
 			})
 			.map(block => block.join(''))
 			.join('');
+
+		return this.decodedData;
 	}
 
 	bitesToText(bites) {

@@ -18,11 +18,19 @@ function readInputData(textFileName, keyFileName) {
 	});
 }
 
+let writeFileData = function(cipher, encodedTextPath, decodedTextPath) {
+	fs.writeFileSync(encodedTextPath, cipher.encodedText);
+	fs.writeFileSync(decodedTextPath, cipher.decodedText);
+}
 readInputData('./input/text.txt', './input/key.txt')
 	.then((data) => {
 		var desCipher = new DES();
+		
 		desCipher.initData(data.openText, data.key);
 		desCipher.encodeData();
 		desCipher.decodeData();
+
 		desCipher.consoleData();
+
+		writeFileData(desCipher, './output/encoded.txt', './output/decoded.txt');
 	});
